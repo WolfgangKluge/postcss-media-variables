@@ -1,0 +1,41 @@
+{
+  "name": "postcss-media-variables",
+  "version": "1.0.0",
+  "description": "PostCSS plugin to transform CSS Custom Properties syntax inside @media-queries into a static representation",
+  "keywords": [
+    "postcss",
+    "css",
+    "media-query",
+    "postcss-plugin"
+  ],
+  "author": {
+    "name": "Wolfgang Kluge",
+    "email": "wolfgang@klugesoftware.de",
+    "url": "http://klugesoftware.de/"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WolfgangKluge/postcss-media-variables.git"
+  },
+  "dependencies": {
+    "postcss": "^4.1.11"
+  },
+  "devDependencies": {
+    "chai": "^2.3.0",
+    "gulp": "^3.8.11",
+    "gulp-eslint": "^0.12.0",
+    "gulp-mocha": "^2.1.0",
+    "mocha": "^2.2.5",
+    "postcss-calc": "^4.1.0",
+    "postcss-css-variables": "^0.3.8",
+    "postcss-custom-media": "^4.0.0"
+  },
+  "scripts": {
+    "test": "gulp"
+  },
+  "bugs": {
+    "url": "https://github.com/WolfgangKluge/postcss-media-variables/issues"
+  },
+  "homepage": "https://github.com/WolfgangKluge/postcss-media-variables"
+}
