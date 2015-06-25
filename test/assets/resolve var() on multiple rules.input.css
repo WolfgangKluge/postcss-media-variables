@@ -1,0 +1,6 @@
+:root {
+    --min-width: 1000px;
+    --max-width: 2000px;
+}
+@media screen and (min-width: var(--min-width)), (max-width: var(--max-width)) {
+}

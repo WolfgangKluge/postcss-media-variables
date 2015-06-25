@@ -1,72 +1,76 @@
 var postcss = require('postcss');
 var expect  = require('chai').expect;
 var path    = require('path');
+var fs      = require('fs');
 
 var mediaVariables = require('../');
 var cssVariables = require('postcss-css-variables');
 var calc = require('postcss-calc');
 var customMedia = require('postcss-custom-media');
 
-var test = function (input, expected, opts) {
+function warningToString(warning) {
+    return  warning.type + ': ' +
+            warning.text;
+}
+
+function adjust(txt) {
+    return txt
+        .replace(/^\s+|\s+$|\r(?=\n)/g, '')
+        .replace(/^\r/g, '\n');
+}
+
+function runTest(input, expected, expectedWarnings) {
     var result = postcss(
-        mediaVariables(opts),
+        mediaVariables(),
         customMedia(),
         cssVariables(),
         calc(),
-        mediaVariables(opts)
+        mediaVariables()
     ).process(input);
 
-    expect(result.css).to.eql(expected);
-    expect(result.warnings()).to.be.empty;
-};
+    var output = result.css;
+    var warnings = result.warnings().map(warningToString).join('\n\n');
 
-describe('postcss-mixins', function () {
-    it('resolve var()', function () {
-        test(
-            '\
-                :root {\
-                    --min-width: 1000px;\
-                }\
-                @media (min-width: calc(var(--min-width))) {\
-                }\
-            ',
-            '\
-                @media (min-width: 1000px) {\
-                }\
-            '
-        );
+    expect(adjust(output)).to.eql(adjust(expected));
+    expect(adjust(warnings)).to.eql(adjust(expectedWarnings));
+}
+
+describe('assets', function () {
+    var assetDir = path.join(__dirname, 'assets');
+    var assetnames = fs.readdirSync(assetDir);
+
+    var tests = [];
+    assetnames.forEach(function (assetname) {
+        var assetpath = path.join(assetDir, assetname);
+        var ext = path.extname(assetname); // .css
+        assetname = path.basename(assetname, ext);
+
+        ext = path.extname(assetname); // .input, .output, ...
+        assetname = path.basename(assetname, ext);
+
+        if (ext === '') return;
+
+        if (!tests[assetname]) tests[assetname] = {
+            input: '',
+            output: '',
+            warnings: ''
+        };
+
+        ext = ext.substr(1);
+        if (tests[assetname].hasOwnProperty(ext)) {
+            tests[assetname][ext] = fs.readFileSync(assetpath, 'utf-8');
+        }
     });
 
-    it('resolve var() on multiple rules', function () {
-        test(
-            '\
-                :root {\
-                    --min-width: 1000px;\
-                    --max-width: 2000px;\
-                }\
-                @media screen and (min-width: var(--min-width)), (max-width: var(--max-width)) {\
-                }\
-            ',
-            '\
-                @media screen and (min-width: 1000px), (max-width: 2000px) {\
-                }\
-            '
-        );
-    });
+    Object.keys(tests).forEach(function (testname) {
+        var test = tests[testname];
 
-    it('resolve calc()', function () {
-        test(
-            '\
-                :root {\
-                    --min-width: 1000px;\
-                }\
-                @media (max-width: calc(var(--min-width) - 1px)) {\
-                }\
-            ',
-            '\
-                @media (max-width: 999px) {\
-                }\
-            '
-        );
+        it(testname, function () {
+            runTest(
+                test.input,
+                test.output,
+                test.warnings
+            );
+        });
     });
 });
