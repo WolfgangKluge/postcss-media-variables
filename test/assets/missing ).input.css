@@ -1,0 +1,5 @@
+:root {
+    --min-width: 1000px;
+}
+@media (min-width: calc(var(--min-width) {
+}

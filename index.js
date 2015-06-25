@@ -73,7 +73,7 @@ function parseQuery(params) {
             if (r === false) {
                 return {
                     type: 'warning',
-                    msg: 'Missing ' + positions + ' closing parenthesis'
+                    msg: 'Missing ' + parenCount + ' closing parenthesis'
                 };
             }
             parenCount += r.value === '(' ? 1 : -1;
