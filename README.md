@@ -3,6 +3,7 @@
 [PostCSS][postcss] plugin to use CSS Custom Properties in `@media` query parameters.
 
 **There's no specification for this!**
+(but it feels so natural..)
 
 # Example
 
@@ -10,20 +11,20 @@
 /* input */
 :root {
     --min-width: 1000px;
+    --smallscreen: 480px;
 }
+@media (min-width: var(--min-width)) {}
+@media (max-width: calc(var(--min-width) - 1px)) {}
 
-@media (min-width: var(--min-width)) {
-}
-@media (max-width: calc(var(--min-width) - 1px)) {
-}
+@custom-media --small-device (max-width: var(--smallscreen));
+@media (--small-device) {}
 ```
 
 ```css
 /* output */
-@media (min-width: 1000px) {
-}
-@media (max-width: 999px) {
-}
+@media (min-width: 1000px) {}
+@media (max-width: 999px) {}
+@media (max-width: 480px) {}
 ```
 
 ### Install
@@ -37,15 +38,13 @@
 Every other plugin is optional, but keep this order of plugins if you use any of them.
 
 - **`postcss-media-variables`** (first occurence)
-- [`postcss-custom-media`][custom-media] (see below!)
+- [`postcss-custom-media`][custom-media]
 - [`postcss-css-variables`][css-variables] and/or [`postcss-custom-properties`][custom-properties]
 - [`postcss-calc`][calc]
 - **`postcss-media-variables`** (second occurence)
 - [`postcss-media-minmax`][media-minmax]
 
-This plugin currently does not play very well with [`postcss-custom-media`][custom-media]!
-Just don't use any `var()` in `@custom-media` definitions. I try to fix that.
-The position of `postcss-custom-media` is choosen in the believe, I can fix it ;) At the moment, you can place it everywhere after the first (or second) occurence of `postcss-media-variables`.
+Since v1.1.0, this plugin plays well with [`postcss-custom-media`][custom-media]!
 
 ### Example
 
@@ -54,13 +53,15 @@ var postcss = require('postcss');
 
 var mediaVariables = require('postcss-media-variables');
 var cssVariables = require('postcss-css-variables');
+var customMedia = require('postcss-custom-media');
 var calc = require('postcss-calc');
 
 var mycss = fs.readFileSync('input.css', 'utf8');
 
-// Process your CSS with postcss-css-variables
+// Process your CSS
 var output = postcss([
         mediaVariables(), // first run
+        customMedia(/* options */),
         cssVariables(/* options */),
         calc(/* options */),
         mediaVariables() // second run
@@ -72,17 +73,18 @@ console.log(output);
 ```
 [*For more general PostCSS usage, see this section*](https://github.com/postcss/postcss#usage)
 
-In the first run `postcss-media-variables` inserts a new elements into every `@media`-rule.
-In the second run, it removes those elements and uses the newly calculated information from there to change the `@media`-rule parameters.
+In the first run, `postcss-media-variables` inspects every `@media` and every `@custom-media` rule, parses their params and wraps the affected `@media` rules into helper rules.
+The information in the helper rules are calculated and resolved then.
+In the second run, this plugin removes those helper rules again and uses the newly calculated information from there to change the `@media`-rule parameters.
 
 # Non-Standard and not proposed - so why?
 This plugin is created in personal need of a solution for the issue [Resolve variables in media queries ](https://github.com/postcss/postcss-custom-properties/issues/24).
 
 
 
-[postcss]: https://github.com/postcss/postcss
-[css-variables]: https://github.com/MadLittleMods/postcss-css-variables
-[custom-properties]: https://github.com/postcss/postcss-custom-properties
-[calc]: https://github.com/postcss/postcss-calc
-[custom-media]: https://github.com/postcss/postcss-custom-media
-[media-minmax]: https://github.com/postcss/postcss-media-minmax
+[calc]:                 https://github.com/postcss/postcss-calc
+[css-variables]:        https://github.com/MadLittleMods/postcss-css-variables
+[custom-media]:         https://github.com/postcss/postcss-custom-media
+[custom-properties]:    https://github.com/postcss/postcss-custom-properties
+[media-minmax]:         https://github.com/postcss/postcss-media-minmax
+[postcss]:              https://github.com/postcss/postcss
