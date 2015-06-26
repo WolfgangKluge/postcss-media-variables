@@ -1,0 +1,6 @@
+:root {
+    --min-width: 1000px;
+}
+@custom-media --test1 (max-width: calc(var(--min-width) - 1));
+@custom-media --test2 (min-width: var(--min-width));
+@media (--test1), (--test2) and (--test1) {}
