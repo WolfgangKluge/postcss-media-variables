@@ -272,7 +272,9 @@ function wrap(rule, wrappingWith) {
  * @param  {external:result} result PostCSS Result
  */
 function secondRun(media, result) {
-    media.parent.eachDecl(function (decl) {
+    if (!isHelperRule(media.parent)) return;
+    media.parent.each(function (decl) {
+        if (decl.type !== 'decl') return;
         do {
             media.params = media.params.replace(decl.prop, decl.value);
         } while (media.params.indexOf(decl.prop) !== -1);
