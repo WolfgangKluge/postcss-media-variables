@@ -1,23 +1,38 @@
 // PostCSS CSS Variables in @media queries
 // https://github.com/WolfgangKluge/postcss-media-variables
 
+/**
+ * The PostCSS Rule node
+ * @external rule
+ * @see {@link https://github.com/postcss/postcss/blob/master/docs/api.md#rule-node}
+ */
+
+/**
+ * The PostCSS AtRule node
+ * @external atrule
+ * @see {@link https://github.com/postcss/postcss/blob/master/docs/api.md#atrule-node}
+ */
+
+/**
+ * The PostCSS Result class
+ * @external result
+ * @see {@link https://github.com/postcss/postcss/blob/master/docs/api.md#result-class}
+ */
+
 var postcss = require('postcss');
 
 var helperSelector = '::-postcss-media-variables';
-var prefix = '-postcss-media-';
-
-function createReplacerId(idx) {
-    return '$--m' + idx + 'p';
-}
+var runProperty = '-postcss-media-run';
+var propertyPrefix = '-pcs-mv-';
 
 /**
  * Search for the first occurence of two alternatives
  *
- * @param  {String} txt text to search in
- * @param  {Number} pos start-position in text (where the search starts)
- * @param  {String} a   text to find
- * @param  {String} b   text to find
- * @return {false|Object} false, if there's no match, Object otherwise
+ * @param  {string}             txt     text to search in
+ * @param  {Number}             pos     start-position in text (where the search starts)
+ * @param  {string}             a       text to find
+ * @param  {string}             b       text to find
+ * @return {(Boolean|Object)}           false, if there's no match, Object otherwise
  */
 function searchForFirst(txt, pos, a, b) {
     var aidx = txt.indexOf(a, pos);
@@ -43,14 +58,14 @@ function searchForFirst(txt, pos, a, b) {
 /**
  * parse params
  *
- * search for calc( and var( (whatever comes first)
- * search for the matching )
- * add to return value
+ * search for `calc(` and `var(` (whatever comes first)
+ * search for the matching `)`
+ * add text position/length to the return value
  *
  * Attention: this does not respect any other text ending with e.g. `var(` like `somevar(`!
  *
- * @param  {String} params String to parse
- * @return {[Object]|Object}  Array of text positions or Object on error
+ * @param  {string}             params  string to parse
+ * @return {(Object[]|Object)}          Array of text positions or Object on error
  */
 function parseQuery(params) {
     var ret = [];
@@ -88,34 +103,15 @@ function parseQuery(params) {
 }
 
 /**
- * inspect @media rule
- * parse the @media params
- * replace every occurence of calc(..) and var(..) with a replacement id
- * add a helper rule at the end of the @media rule with a map of replacement id to calc(..) / var(..)
- *
- * @param  {Object} atrule postcss AtRule
- * @param  {Object} result postcss AtRule
+ * create the helper rule with a comment
+ * @return {external:rule} the newly created helper rule
  */
-function firstRun(atrule, result) {
-    var positions = parseQuery(atrule.params);
-
-    if (positions === null) {
-        result.warn('Unknown error while parsing @media params', { node: atrule });
-        return;
-    }
-
-    if (positions.type === 'warning') {
-        // error
-        result.warn(positions.msg, { node: atrule });
-        return;
-    }
-
-    // add helper rule even if there is nothing to calculate (for second run)
-    var helperRule = postcss.rule({
+function createHelperRule() {
+    var rule = postcss.rule({
         selector: helperSelector
     });
 
-    helperRule.append(
+    rule.append(
         postcss.comment({
             text: 'If you can see this comment, you might have forgotten to add\n' +
                   'postcss-media-variables to the plugin list for a second time.\n\n' +
@@ -124,28 +120,147 @@ function firstRun(atrule, result) {
         })
     );
 
-    if (positions.length > 0) {
+    return rule;
+}
+
+/**
+ * take the parsed information and create new entries in the helperRule for them
+ * returns the new atrule params value
+ *
+ * @param  {Object[]}       parsedPositions relevant text positions/lengths
+ * @param  {string}         params          the original atrule params
+ * @param  {external:rule}  helperRule      the helper rule to add new entries to
+ * @param  {string}         lineNumber      line number of the AtRule
+ * @return {string}                         the new atrule params
+ */
+function createDecls(parsedPositions, params, helperRule, lineNumber) {
+    var ret = '';
+    if (parsedPositions.length > 0) {
         var newParams = ''; // create new params with replacement strings
         var lastPos = 0;
 
-        positions.forEach(function (position, idx) {
-            var func = atrule.params.substr(position.start, position.length);
+        parsedPositions.forEach(function (data) {
+            var func = params.substr(data.start, data.length);
+            var prop = propertyPrefix + lineNumber + '-' + data.start + 'e';
 
-            newParams += atrule.params.substr(lastPos, position.start - lastPos);
-            newParams += createReplacerId(idx);
-            lastPos = position.start + position.length;
+            newParams += params.substr(lastPos, data.start - lastPos);
+            newParams += prop;
+            lastPos = data.start + data.length;
 
             helperRule.append(
                 postcss.decl({
-                    prop: prefix + idx,
+                    prop: prop,
                     value: func
                 })
             );
         });
-        atrule.params = newParams + atrule.params.substr(lastPos);
+        return newParams + params.substr(lastPos);
+    }
+    return params;
+}
+
+/**
+ * search for `var()` and `calc()` in the parameters of an atrule
+ * @param  {external:atrule}    atrule  PostCSS AtRule to search in
+ * @param  {external:result}    result  PostCSS Result
+ * @return {(Object[]|Boolean)}         false, if there's an error, otherwise an array of text positions/lengths
+ */
+function parse(atrule, result) {
+    var parsedPositions = parseQuery(atrule.params);
+
+    if (parsedPositions === null) {
+        result.warn('Unknown error while parsing @media params', { node: atrule });
+        return false;
     }
 
-    atrule.append(helperRule);
+    if (parsedPositions.type === 'warning') {
+        // error
+        result.warn(parsedPositions.msg, { node: atrule });
+        return false;
+    }
+
+    return parsedPositions;
+}
+
+/**
+ * clones all children of org into node
+ * @param  {external:node}  org     the node to clone from
+ * @param  {external:node}  node    the node to copy the clones into
+ */
+function cloneChildrenTo(org, node) {
+    org.each(function (n) {
+        node.append(n.clone());
+    });
+}
+
+/**
+ * inspect @media rule
+ * parse the @media params
+ * replace every occurence of calc(..) and var(..) with a replacement id
+ * create a helper rule with a replacementid: var()/calc() list
+ * wrap the helper rule around the @media rule (if there is already one, only copy it's children)
+ *
+ * @param  {external:atrule} atrule PostCSS AtRule
+ * @param  {external:result} result PostCSS Result
+ */
+function firstRun_media(media, result) {
+    var parsedPositions = parse(media, result);
+    if (parsedPositions === false) return;
+
+    var helperRule;
+    if (isHelperRule(media.parent)) {
+        helperRule = media.parent;
+    } else {
+        helperRule = createHelperRule();
+        wrap(media, helperRule);
+    }
+
+    media.params = createDecls(parsedPositions, media.params, helperRule, media.source.start.line);
+}
+
+/**
+ * inspect @custom-media rule
+ * parse the @custom-media params
+ * create a helper rule (map of replacement id: calc(..) / var(..))
+ * replace every occurence of calc(..) and var(..) with the replacement id
+ * wrap another helper rule around every @media rule, where the @custom-media rule is referenced (if not present)
+ * copy a clone of each decl of the helper rule into the wrapping rule
+ *
+ * @param  {external:atrule} customMedia PostCSS AtRule
+ * @param  {external:result} result      PostCSS Result
+ */
+function firstRun_customMedia(customMedia, result) {
+    var parsedPositions = parse(customMedia, result);
+    if (parsedPositions === false) return;
+
+    var name = customMedia.params.split(' ')[0];
+    var helperRule = createHelperRule();
+
+    customMedia.params = createDecls(parsedPositions, customMedia.params, helperRule, customMedia.source.start.line);
+    customMedia.root().eachAtRule('media', function (media) {
+        if (media.params.indexOf('(' + name + ')') === -1) return;
+
+        var currHelperRule;
+        if (isHelperRule(media.parent)) {
+            currHelperRule = media.parent;
+        } else {
+            currHelperRule = createHelperRule();
+            wrap(media, currHelperRule);
+        }
+
+        cloneChildrenTo(helperRule, currHelperRule);
+    });
+}
+
+/**
+ * wrap the wrappingWith-rule around rule
+ * @param  {external:rule} rule         the rule to wrap
+ * @param  {external:rule} wrappingWith the wrapping element
+ */
+function wrap(rule, wrappingWith) {
+    rule.replaceWith(wrappingWith);
+    wrappingWith.append(rule);
+    wrappingWith.source = rule.source;
 }
 
 /**
@@ -153,46 +268,100 @@ function firstRun(atrule, result) {
  * search for the helper rule and use it's declarations to change the @media-parameter
  * remove the helper rule
  *
- * @param  {Object} atrule postcss AtRule
- * @param  {Object} result postcss AtRule
+ * @param  {external:atrule} media  PostCSS AtRule
+ * @param  {external:result} result PostCSS Result
  */
-function secondRun(atrule, result) {
-    atrule.each(function (node) {
-        if (node.selector === helperSelector) {
-            node.eachDecl(function (decl) {
-                if (!decl.prop || decl.prop.substr(0, prefix.length) !== prefix) return;
-
-                var id = createReplacerId(decl.prop.substr(prefix.length));
-                atrule.params = atrule.params.replace(id, decl.value);
-            });
-
-            // cleanup
-            node.removeSelf();
-            return false;
-        }
+function secondRun(media, result) {
+    media.parent.eachDecl(function (decl) {
+        do {
+            media.params = media.params.replace(decl.prop, decl.value);
+        } while (media.params.indexOf(decl.prop) !== -1);
     });
+
+    media.parent.replaceWith(media);
 }
 
 /**
  * tests, if a rule is a helper rule
  *
- * @param  {Object} rule postcss Node
- * @return {Boolean}     true, if it's a helper rule
+ * @param  {external:rule} rule PostCSS Rule
+ * @return {Boolean}            true, if it's a helper rule
  */
 function isHelperRule(rule) {
-    return rule.selector == helperSelector;
+    return rule && rule.selector == helperSelector;
 }
 
-module.exports = postcss.plugin('postcss-media-variables', function () {
+/**
+ * called every time, the plugin is invoked
+ */
+function onInvoke() {
     return function (css, result) {
-        css.eachAtRule('media', function (atrule) {
-            var isSecondRun = atrule.some(isHelperRule);
+        var step = 0;
+        var stepNode;
 
-            if (!isSecondRun) {
-                firstRun(atrule, result);
-                return;
-            }
-            secondRun(atrule, result);
+        css.every(function (rule) {
+            if (!isHelperRule(rule)) return;
+
+            rule.eachDecl(function (decl) {
+                if (decl.prop !== runProperty) return;
+
+                stepNode = decl;
+                step = parseInt(decl.value, 10);
+                return false;
+            });
+            return false;
         });
+
+        if (stepNode == null) {
+            var node = createHelperRule();
+            stepNode = postcss.decl({
+                prop: runProperty,
+                value: '0'
+            });
+            node.append(stepNode);
+            css.prepend(node);
+        }
+
+        steps[step](css, result);
+        if (step + 1 < steps.length) {
+            stepNode.value = (step + 1).toString();
+        } else {
+            // cleanup on last step
+            stepNode.parent.removeSelf();
+        }
     };
-});
+}
+
+var steps = [step1, step2];
+
+/**
+ * inspect and change every `custom-media` and `media`
+ * and wrap the @media rules with helper rules
+ *
+ * @param  {external:node}      css      the global Node
+ * @param  {external:result}    result   PostCSS Result
+ */
+function step1(css, result) {
+    css.eachAtRule('custom-media', function (customMedia) {
+        firstRun_customMedia(customMedia, result);
+    });
+    css.eachAtRule('media', function (media) {
+        firstRun_media(media, result);
+    });
+}
+
+/**
+ * step two: inspect every parent of every media rule. If it's a
+ * helper rule use the information from there and unwrap everything
+ *
+ * @param  {external:node}      css      the global Node
+ * @param  {external:result}    result   PostCSS Result
+ */
+function step2(css, result) {
+    css.eachAtRule('media', function (media) {
+        secondRun(media, result);
+    });
+}
+
+module.exports = postcss.plugin('postcss-media-variables', onInvoke);
+
