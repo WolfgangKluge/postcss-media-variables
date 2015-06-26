@@ -1,3 +1,6 @@
+## 1.1.1
+* Bugfix on `@media` rules where parts of the params are names of declarations in sub-rules
+
 ## 1.1.0
 * Add support for custom-media
 
