@@ -1,0 +1,9 @@
+:root {
+    --xyz: 500px;
+}
+
+@media (min-width: 320px), (max-width: var(--xyz)) {
+    .x {
+        min-width: 200px;
+    }
+}
