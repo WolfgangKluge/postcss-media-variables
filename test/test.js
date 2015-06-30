@@ -19,20 +19,24 @@ function adjust(txt) {
         .replace(/^\r/g, '\n');
 }
 
-function runTest(input, expected, expectedWarnings) {
-    var result = postcss(
+function runTest(input, expected, expectedWarnings, done) {
+    postcss(
         mediaVariables(),
         customMedia(),
         cssVariables(),
         calc(),
         mediaVariables()
-    ).process(input);
+    ).process(input).then(function (result) {
+        var output = result.css;
+        var warnings = result.warnings().map(warningToString).join('\n\n');
 
-    var output = result.css;
-    var warnings = result.warnings().map(warningToString).join('\n\n');
-
-    expect(adjust(output)).to.eql(adjust(expected));
-    expect(adjust(warnings)).to.eql(adjust(expectedWarnings));
+        if (expected === null) {
+            console.log(output);
+        } else {
+            expect(adjust(output)).to.eql(adjust(expected));
+        }
+        expect(adjust(warnings)).to.eql(adjust(expectedWarnings));
+    }).then(done, done);
 }
 
 describe('assets', function () {
@@ -52,7 +56,7 @@ describe('assets', function () {
 
         if (!tests[assetname]) tests[assetname] = {
             input: '',
-            output: '',
+            output: null,
             warnings: ''
         };
 
@@ -65,11 +69,12 @@ describe('assets', function () {
     Object.keys(tests).forEach(function (testname) {
         var test = tests[testname];
 
-        it(testname, function () {
+        it(testname, function (done) {
             runTest(
                 test.input,
                 test.output,
-                test.warnings
+                test.warnings,
+                done
             );
         });
     });
