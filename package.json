@@ -1,6 +1,6 @@
 {
   "name": "postcss-media-variables",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "PostCSS plugin to transform CSS Custom Properties syntax inside @media-queries into a static representation",
   "keywords": [
     "postcss",

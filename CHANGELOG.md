@@ -1,3 +1,6 @@
+## 1.1.2
+* Prevent the use of `removeSelf` to keep style code (#1)
+
 ## 1.1.1
 * Bugfix on `@media` rules where parts of the params are names of declarations in sub-rules
 

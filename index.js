@@ -280,7 +280,13 @@ function secondRun(media, result) {
         } while (media.params.indexOf(decl.prop) !== -1);
     });
 
-    media.parent.replaceWith(media);
+    // #1: `replaceWith` internally uses a clone of the node - and thus
+    //     it removes all styling (in the current version of PostCSS)
+    //
+    //     `moveTo` will also changes some style (indentation)!
+    var parent = media.parent;
+    media.moveTo(parent.parent);
+    parent.removeSelf();
 }
 
 /**

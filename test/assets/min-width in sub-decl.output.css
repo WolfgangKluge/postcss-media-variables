@@ -1,5 +1,5 @@
 @media (min-width: 320px), (max-width: 500px) {
     .x {
-        min-width: 200px
+        min-width: 200px;
     }
 }
