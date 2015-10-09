@@ -1,3 +1,6 @@
+## 2.0.0
+* Update to postcss 5 (#3)
+
 ## 1.1.2
 * Prevent the use of `removeSelf` to keep style code (#1)
 
