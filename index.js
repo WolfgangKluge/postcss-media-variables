@@ -237,7 +237,7 @@ function firstRun_customMedia(customMedia, result) {
     var helperRule = createHelperRule();
 
     customMedia.params = createDecls(parsedPositions, customMedia.params, helperRule, customMedia.source.start.line);
-    customMedia.root().eachAtRule('media', function (media) {
+    customMedia.root().walkAtRules('media', function (media) {
         if (media.params.indexOf('(' + name + ')') === -1) return;
 
         var currHelperRule;
@@ -286,7 +286,7 @@ function secondRun(media, result) {
     //     `moveTo` will also changes some style (indentation)!
     var parent = media.parent;
     media.moveTo(parent.parent);
-    parent.removeSelf();
+    parent.remove();
 }
 
 /**
@@ -310,7 +310,7 @@ function onInvoke() {
         css.every(function (rule) {
             if (!isHelperRule(rule)) return;
 
-            rule.eachDecl(function (decl) {
+            rule.walkDecls(function (decl) {
                 if (decl.prop !== runProperty) return;
 
                 stepNode = decl;
@@ -335,7 +335,7 @@ function onInvoke() {
             stepNode.value = (step + 1).toString();
         } else {
             // cleanup on last step
-            stepNode.parent.removeSelf();
+            stepNode.parent.remove();
         }
     };
 }
@@ -350,10 +350,10 @@ var steps = [step1, step2];
  * @param  {external:result}    result   PostCSS Result
  */
 function step1(css, result) {
-    css.eachAtRule('custom-media', function (customMedia) {
+    css.walkAtRules('custom-media', function (customMedia) {
         firstRun_customMedia(customMedia, result);
     });
-    css.eachAtRule('media', function (media) {
+    css.walkAtRules('media', function (media) {
         firstRun_media(media, result);
     });
 }
@@ -366,7 +366,7 @@ function step1(css, result) {
  * @param  {external:result}    result   PostCSS Result
  */
 function step2(css, result) {
-    css.eachAtRule('media', function (media) {
+    css.walkAtRules('media', function (media) {
         secondRun(media, result);
     });
 }
