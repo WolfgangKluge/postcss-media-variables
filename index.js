@@ -69,7 +69,6 @@ function searchForFirst(txt, pos, a, b) {
  */
 function parseQuery(params) {
     var ret = [];
-    var plen = params.length;
     var pos = 0;
 
     do {
@@ -134,7 +133,6 @@ function createHelperRule() {
  * @return {string}                         the new atrule params
  */
 function createDecls(parsedPositions, params, helperRule, lineNumber) {
-    var ret = '';
     if (parsedPositions.length > 0) {
         var newParams = ''; // create new params with replacement strings
         var lastPos = 0;
@@ -269,9 +267,8 @@ function wrap(rule, wrappingWith) {
  * remove the helper rule
  *
  * @param  {external:atrule} media  PostCSS AtRule
- * @param  {external:result} result PostCSS Result
  */
-function secondRun(media, result) {
+function secondRun(media) {
     if (!isHelperRule(media.parent)) return;
     media.parent.each(function (decl) {
         if (decl.type !== 'decl') return;
@@ -282,10 +279,8 @@ function secondRun(media, result) {
 
     // #1: `replaceWith` internally uses a clone of the node - and thus
     //     it removes all styling (in the current version of PostCSS)
-    //
-    //     `moveTo` will also changes some style (indentation)!
     var parent = media.parent;
-    media.moveTo(parent.parent);
+    parent.parent.insertBefore(parent, media);
     parent.remove();
 }
 
