@@ -282,10 +282,8 @@ function secondRun(media, result) {
 
     // #1: `replaceWith` internally uses a clone of the node - and thus
     //     it removes all styling (in the current version of PostCSS)
-    //
-    //     `moveTo` will also changes some style (indentation)!
     var parent = media.parent;
-    media.moveTo(parent.parent);
+    parent.parent.insertBefore(parent, media);
     parent.remove();
 }
 
