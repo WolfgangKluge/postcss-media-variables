@@ -49,6 +49,7 @@ Since v1.1.0, this plugin plays well with [`postcss-custom-media`][custom-media]
 ### Example
 
 ```js
+var fs = require('fs');
 var postcss = require('postcss');
 
 var mediaVariables = require('postcss-media-variables');
@@ -59,14 +60,13 @@ var calc = require('postcss-calc');
 var mycss = fs.readFileSync('input.css', 'utf8');
 
 // Process your CSS
-var output = postcss([
-        mediaVariables(), // first run
-        customMedia(/* options */),
-        cssVariables(/* options */),
-        calc(/* options */),
-        mediaVariables() // second run
-    ])
-    .process(mycss)
+var output = postcss()
+    .use(mediaVariables()) // first run
+    .use(customMedia(/* options */))
+    .use(cssVariables(/* options */))
+    .use(calc(/* options */))
+    .use(mediaVariables()) // second run
+    .process(mycss, { /* postcss - options */ })
     .css;
 
 console.log(output);

@@ -20,23 +20,30 @@ function adjust(txt) {
 }
 
 function runTest(input, expected, expectedWarnings, done) {
-    postcss(
-        mediaVariables(),
-        customMedia(),
-        cssVariables(),
-        calc(),
-        mediaVariables()
-    ).process(input).then(function (result) {
-        var output = result.css;
-        var warnings = result.warnings().map(warningToString).join('\n\n');
+    var options = {
+        from: undefined
+    };
 
-        if (expected === null) {
-            console.log(output);
-        } else {
-            expect(adjust(output)).to.eql(adjust(expected));
-        }
-        expect(adjust(warnings)).to.eql(adjust(expectedWarnings));
-    }).then(done, done);
+    postcss()
+        .use(mediaVariables())
+        .use(customMedia())
+        .use(cssVariables())
+        .use(calc())
+        .use(mediaVariables())
+        
+        .process(input, options)
+        .then(function (result) {
+            var output = result.css;
+            var warnings = result.warnings().map(warningToString).join('\n\n');
+
+            if (expected === null) {
+                console.log(output);
+            } else {
+                expect(adjust(output)).to.eql(adjust(expected));
+            }
+            expect(adjust(warnings)).to.eql(adjust(expectedWarnings));
+        })
+        .then(done, done);
 }
 
 describe('assets', function () {
