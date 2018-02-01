@@ -1,3 +1,6 @@
+## 2.0.1
+* Update to postcss 6 (#9)
+
 ## 2.0.0
 * Update to postcss 5 (#3)
 
