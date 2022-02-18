@@ -1,3 +1,10 @@
+⚠️ Since I've no time for this little project, I've decided to archive the repository.
+
+https://github.com/postcss/postcss-custom-media seems like a great alternative that works with the latest PostCSS versions.
+
+---
+
+
 # PostCSS CSS Variables in `@media` queries
 
 [PostCSS][postcss] plugin to use CSS Custom Properties in `@media` query parameters.
